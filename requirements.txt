@@ -1,0 +1,6 @@
+torch
+datasets
+tqdm
+pathlib
+transformers
+huggingface_hub
