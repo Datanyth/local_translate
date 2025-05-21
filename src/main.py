@@ -9,12 +9,17 @@ import argparse
 from src.model import TranslateModel
 from utils.utils import download_dataset_from_huggingface, push_to_hub, make_dir, apply_llamaX_template, load_all_chunk
 
+import warnings
 import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+import transformers
+from transformers.utils.logging import set_verbosity
+set_verbosity(transformers.logging.CRITICAL)
 
-class AbtractTranslateProcessor:
+
+class TranslateProcessor:
 
     """
     Initialize the translation processor.
@@ -67,6 +72,7 @@ class AbtractTranslateProcessor:
                  trg_language:str,
                  max_length_token:int,
                  dataset_name:str,
+                 column_name:List[str],
                  translated_dataset_dir:str,
                  subset:str = 'default',
                  start_inter:int = 0,
@@ -76,8 +82,9 @@ class AbtractTranslateProcessor:
         
         self.prompt_template_fn = prompt_template_fn
         self.model_id = model_id
-        self.repo_id = repo_id, 
+        self.repo_id = repo_id
         self.dataset_name= dataset_name
+        self.column_name = column_name
         self.subset = subset
         self.start_inter = start_inter
         self.batch_size = batch_size
@@ -105,32 +112,37 @@ class AbtractTranslateProcessor:
 
     def dataset_process_mapping(self, sample):
          
-        problem = sample['problem']
-        solution = sample['solution']
+        # problem = sample['problem']
+        # solution = sample['solution']
 
-        # Create two key to save 
-        problem_column_translated = f'problem_{self.trg_language}'
-        solution_column_translated = f'solution{self.trg_language}'
+        column_list = []
+        for column in self.column_name:
+            column_list.append(sample[column])
+
+        # Create key to save 
+        key_column_translated = [f"{column}_{self.trg_language}" for column in self.column_name]
 
         # Translate sentences with llm model
-        problem_translated = self.translate_model.translate(query= problem, 
-                                                            src_language= self.src_language, 
-                                                            trg_language= self.trg_language)
-        solution_translated = self.translate_model.translate(query = solution,
-                                                             src_language= self.src_language,
-                                                             trg_language= self.trg_language)
+        translated_output = [self.translate_model.translate(query= column_input,src_language= self.src_language, trg_language= self.trg_language) for column_input in column_list]
 
         # Post process after translate
-        problem_postprocessed= self.postprocess_llm_output(problem_translated)
-        solution_translated = self.postprocess_llm_output(solution_translated)
+        translated_postprocessed = [self.postprocess_llm_output(column_input, column_translated) for column_input, column_translated in zip(column_list, translated_output)]
 
-        return {
+        return_dict = {}
+        for key, value in zip(key_column_translated, translated_postprocessed):
+            return_dict[key] = value
+
+        return return_dict
+
+        # return {
              
-             problem_column_translated: problem_postprocessed,
-             solution_column_translated: solution_column_translated
-        }
+        #      problem_column_translated: problem_postprocessed,
+        #      solution_column_translated: solution_column_translated
+        # }
     
-    def __call__(self):
+    def __call__(self, push = False, warning_skip = True):
+        if warning_skip:
+            warnings.simplefilter("ignore", UserWarning)
     # Create folder to save translated data
         if self.download_dataset_dir is not None:
             dataset_path = Path(os.path.join(self.download_dataset_dir, self.dataset_name))
@@ -171,6 +183,7 @@ class AbtractTranslateProcessor:
                 split_dataset = dataset.select(range(start, end))  # Safe even for last incomplete chunk
             except Exception as e:
                 logger.error(f"Failed to select range({start}, {end}): {e}")
+                logger.warning(f"This will be translated from beginning")
                 continue
 
             # Translate the chunk
@@ -192,7 +205,11 @@ class AbtractTranslateProcessor:
 
         # Merge dataset and push to hub
         merged_dataset = load_all_chunk(src_dir=save_translated_path)
-        push_to_hub(dataset= merged_dataset, repo_id= self.repo_id )
+        if push:
+            push_to_hub(dataset= merged_dataset, repo_id= self.repo_id )
+
+        logger.info(f"Finished pushing dataset to {self.repo_id}")
+        return merged_dataset
 
 def get_args():
     parser = argparse.ArgumentParser(description="Translation Processor Arguments")
@@ -209,11 +226,14 @@ def get_args():
     parser.add_argument('--trg_language', type=str, required=True,
                         help="Target language (e.g., 'Vietnamese')")
 
-    parser.add_argument('--max_length_token', type=int, default=512,
+    parser.add_argument('--max_length_token', type=int, default=8000,
                         help="Maximum number of tokens allowed in the input")
 
     parser.add_argument('--dataset_name', type=str, required=True,
                         help="Name of the HuggingFace dataset")
+
+    parser.add_argument('--column_name', nargs='+', type=str, default=[],
+                        help="Column names to be translated")
 
     parser.add_argument('--translated_dataset_dir', type=str, required=True,
                         help="Directory to save translated dataset")
@@ -232,6 +252,12 @@ def get_args():
 
     parser.add_argument('--writer_batch_size', type=int, default=20,
                         help="Number of records per translated chunk")
+    
+    parser.add_argument('--push', type=bool, default=True,
+                        help="Push the dataset to HuggingFace Hub or not")
+    
+    parser.add_argument('--warning_skip', type=bool, default=True,
+                        help="Skip warning or not")
 
     return parser.parse_args()
 
@@ -239,7 +265,7 @@ def get_args():
 if __name__ == "__main__":
     args = get_args()
     
-    processor = AbtractTranslateProcessor(
+    processor = TranslateProcessor(
         prompt_template_fn= apply_llamaX_template,
         model_id=args.model_id,
         repo_id= args.repo_id, 
@@ -247,6 +273,7 @@ if __name__ == "__main__":
         trg_language=args.trg_language,
         max_length_token=args.max_length_token,
         dataset_name=args.dataset_name,
+        column_name=args.column_name,
         translated_dataset_dir=args.translated_dataset_dir,
         subset=args.subset,
         start_inter=args.start_inter,
@@ -255,4 +282,4 @@ if __name__ == "__main__":
         writer_batch_size=args.writer_batch_size,
     )
 
-    processor()  # run the translation process
+    processor(push=args.push, warning_skip=args.warning_skip)  # run the translation process
