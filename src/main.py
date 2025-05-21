@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 import transformers
 from transformers.utils.logging import set_verbosity
-set_verbosity(transformers.logging.CRITICAL)
+
 
 
 class TranslateProcessor:
@@ -142,7 +142,7 @@ class TranslateProcessor:
     
     def __call__(self, push = False, warning_skip = True):
         if warning_skip:
-            warnings.simplefilter("ignore", UserWarning)
+            set_verbosity(transformers.logging.CRITICAL)
     # Create folder to save translated data
         if self.download_dataset_dir is not None:
             dataset_path = Path(os.path.join(self.download_dataset_dir, self.dataset_name))
