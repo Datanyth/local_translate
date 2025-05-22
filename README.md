@@ -1,9 +1,11 @@
 <p align="center">
     <img src="https://huggingface.co/datasets/TransTa/images_icons/resolve/main/llama_translate.jpg" align="center" width="30%">
 </p>
-<p align="center"><h1 align="center">TRANSLATE_DATA_HUGGINGFACE_WITH_LLM</h1></p>
+<p align="center"><h1 align="center">Local translate</h1></p>
 <p align="center">
-	<em><code>❯ REPLACE-ME</code></em>
+	<!-- <em><code>❯
+</code></em> -->
+   The repo leverages the power of local LLMs to efficiently translate datasets from one language to another.
 </p>
 <p align="center">
 	<img src="https://img.shields.io/github/license/Datanyth/translate_data_huggingface_with_llm?style=default&logo=opensourceinitiative&logoColor=white&color=0080ff" alt="license">
