@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://huggingface.co/datasets/TransTa/images_icons/blob/main/llama_translate.jpg" align="center" width="30%">
+    <img src="https://huggingface.co/datasets/TransTa/images_icons/resolve/main/llama_translate.jpg" align="center" width="30%">
 </p>
 <p align="center"><h1 align="center">TRANSLATE_DATA_HUGGINGFACE_WITH_LLM</h1></p>
 <p align="center">
