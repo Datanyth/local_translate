@@ -128,9 +128,18 @@ Run the test suite using the following command:
 ---
 ##  Project Roadmap
 
-- [X] **`Task 1`**: <strike>Implement feature one.</strike>
+<!-- - [X] **`Task 1`**: <strike>Implement feature one.</strike>
 - [ ] **`Task 2`**: Implement feature two.
-- [ ] **`Task 3`**: Implement feature three.
+- [ ] **`Task 3`**: Implement feature three. -->
+
+- [ ] **`Data support`**: Add support for additional datasets format.
+- [ ] **`Data support`**: Build the datasets for benchmark
+- [ ] **`Model support`**: Add support for additional models.
+- [ ] **`Feature support`**: Add quantized 8 bit model support.
+- [ ] **`Feature support`**: Add quantized 4 bit model support.
+- [ ] **`Feature support`**: Add Benmark and benchmark metric.
+- [ ] **`Performance`**: Multi GPU inference support.
+- [ ] **`Performance`**: Batch inference support.
 
 ---
 
