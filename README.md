@@ -140,6 +140,7 @@ Run the test suite using the following command:
 - [ ] **`Feature support`**: Add Benmark and benchmark metric.
 - [ ] **`Performance`**: Multi GPU inference support.
 - [ ] **`Performance`**: Batch inference support.
+- [ ] **`Language support`**: Add support for additional languages.
 
 ---
 
