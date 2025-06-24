@@ -4,3 +4,5 @@ tqdm
 pathlib
 transformers
 huggingface_hub
+accelerate
+bitsandbytes

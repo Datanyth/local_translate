@@ -78,7 +78,9 @@ class TranslateProcessor:
                  start_inter:int = 0,
                  batch_size:int= 1,
                  download_dataset_dir:str= None,
-                 writer_batch_size:int=20):
+                 writer_batch_size:int=20,
+                 use_4bit: bool = False,
+                 use_8bit: bool = False,):
         
         self.prompt_template_fn = prompt_template_fn
         self.model_id = model_id
@@ -93,10 +95,13 @@ class TranslateProcessor:
         self.trg_language = trg_language
         self.download_dataset_dir= download_dataset_dir
         self.translated_dataset_dir = translated_dataset_dir
-        self.translate_model = TranslateModel(prompt_template_fn= prompt_template_fn,
-                                              model_id= self.model_id,
-                                              max_length_token= max_length_token,
-                                              )
+        self.translate_model = TranslateModel(
+            prompt_template_fn= prompt_template_fn,
+            model_id= self.model_id,
+            max_length_token= max_length_token,
+            use_4bit= use_4bit,
+            use_8bit= use_8bit
+)
         
         # Apply src_language and trg_language for config transalte model
 
@@ -258,8 +263,20 @@ def get_args():
     
     parser.add_argument('--warning_skip', type=bool, default=True,
                         help="Skip warning or not")
+    
+    parser.add_argument('--use_4bit', action='store_true',
+                        help="Use 4-bit quantization for the model (if supported)")
+    parser.add_argument('--use_8bit', action='store_true',
+                        help="Use 8-bit quantization for the model (if supported)")
+    # parser.add_argument('--use_flash_attention', action='store_true',
+    #                     help="Use Flash Attention for faster inference (if supported)")
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    
+    if args.use_4bit and args.use_8bit:
+        args.use_4bit = False
+
+    return args
 
 
 if __name__ == "__main__":
@@ -280,6 +297,8 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         download_dataset_dir=args.download_dataset_dir,
         writer_batch_size=args.writer_batch_size,
+        use_4bit=args.use_4bit,
+        use_8bit=args.use_8bit,
     )
 
     processor(push=args.push, warning_skip=args.warning_skip)  # run the translation process

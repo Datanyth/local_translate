@@ -11,4 +11,5 @@ python -m src.main \
   --translated_dataset_dir ".cache" \
   --download_dataset_dir ".cache" \
   --start_inter 0 \
-  --writer_batch_size 20
+  --writer_batch_size 20 \
+  --use_4bit
