@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=0
 python -m src.main \
   --model_id LLaMAX/LLaMAX3-8B-Alpaca \
   --repo_id ChaosAiVision/Deepseek_R1_vi \
