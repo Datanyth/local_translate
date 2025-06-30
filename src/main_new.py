@@ -1,9 +1,12 @@
 import argparse
 import logging
-from logging import CRITICAL
 import os
+import sys
 from pathlib import Path
-from typing import List, cast, Optional
+from typing import List, Optional, cast
+
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import transformers
 from datasets import load_dataset, load_from_disk, Dataset, DatasetDict
@@ -158,7 +161,7 @@ class TranslateProcessor:
 
     def __call__(self, push=False, warning_skip=True):
         if warning_skip:
-            set_verbosity(CRITICAL)
+            set_verbosity(logging.CRITICAL)
         # Create folder to save translated data
         if self.download_dataset_dir is not None:
             dataset_path = Path(
@@ -172,10 +175,10 @@ class TranslateProcessor:
                 save_dir=dataset_path,
             )
             dataset = load_from_disk(dataset_path=dataset_path)
-            dataset = cast(Dataset, dataset[f"{self.subset}"])
+            dataset = dataset[f"{self.subset}"]
         else:
             # Load from HuggingFace cache
-            dataset_dict = load_dataset(self.dataset_name)
+            dataset_dict = load_dataset(self.dataset_name, streaming=False)
             if isinstance(dataset_dict, DatasetDict):
                 dataset = cast(Dataset, dataset_dict[f"{self.subset}"])
             else:
@@ -209,7 +212,7 @@ class TranslateProcessor:
 
             # Select the current chunk safely
             try:
-                split_dataset = dataset.select(
+                split_dataset = dataset.select(  # type: ignore
                     range(start, end)
                 )  # Safe even for last incomplete chunk
             except Exception as e:

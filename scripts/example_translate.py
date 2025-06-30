@@ -1,30 +1,16 @@
-#!/bin/bash
-
-# Example script for running Local Translate with the new DynamicTranslator API
-# This script demonstrates how to translate a dataset using the LLaMAX model
-
-echo "🚀 Starting Local Translate with DynamicTranslator API"
-echo "Model: LLaMAX/LLaMAX3-8B-Alpaca"
-echo "Dataset: knoveleng/open-s1"
-echo "Translation: English -> Vietnamese"
-
-# Set CUDA device
-export CUDA_VISIBLE_DEVICES=0
-
-# Create Python script for the new API
-cat > temp_translate_script.py << 'EOF'
 #!/usr/bin/env python3
 """
 Example script for Local Translate using DynamicTranslator API
+This script demonstrates how to translate a dataset using the LLaMAX model
 """
 
 import asyncio
 import os
+import sys
 from pathlib import Path
 
 # Add the project root to the path
 project_root = Path(__file__).parent.parent
-import sys
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
@@ -33,20 +19,24 @@ from src.orchestrator import DynamicTranslator
 async def main():
     """Main translation function using the new API."""
     
-    print("=== Local Translate Example ===")
+    print("🚀 Local Translate Example")
     print("Using DynamicTranslator API")
+    print("=" * 50)
     
     # Create translator instance
     translator = DynamicTranslator()
     
     # Translation configuration
     model_id = "LLaMAX/LLaMAX3-8B-Alpaca"
-    dataset_id = "knoveleng/open-s1"
+    dataset_id = "presencesw/open-s1-small"
     output_dir = ".cache"
     
-    print(f"Model: {model_id}")
-    print(f"Dataset: {dataset_id}")
-    print(f"Output: {output_dir}")
+    print(f"📊 Model: {model_id}")
+    print(f"📁 Dataset: {dataset_id}")
+    print(f"📂 Output: {output_dir}")
+    print(f"🌐 Translation: English -> Vietnamese")
+    print(f"⚡ Quantization: 4-bit (GPU-only)")
+    print("=" * 50)
     
     try:
         # Run translation
@@ -55,7 +45,7 @@ async def main():
             model_id=model_id,
             dataset_type="huggingface",
             dataset_id=dataset_id,
-            columns_to_process=["problem", "solution"],
+            columns_to_process=["problem"],
             source_lang="en",
             target_lang="vi",
             quantization="4bit",  # GPU-only 4-bit quantization
@@ -66,12 +56,13 @@ async def main():
             output_dir=output_dir,
             push_to_hub=True,
             # Processing configuration
-            chunk_size=20,
+            chunk_size=1,
             batch_size=1
         )
         
         print("✅ Translation completed successfully!")
         print(f"📁 Results saved to: {output_dir}")
+        print("🎉 Dataset pushed to HuggingFace Hub!")
         
     except Exception as e:
         print(f"❌ Translation failed: {e}")
@@ -82,15 +73,9 @@ async def main():
     return 0
 
 if __name__ == "__main__":
+    # Set CUDA device
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    
+    print("🔧 Setting up CUDA device: 0")
     exit_code = asyncio.run(main())
-    exit(exit_code)
-EOF
-
-# Run the translation script
-echo "📝 Running translation with new API..."
-python temp_translate_script.py
-
-# Clean up temporary script
-rm -f temp_translate_script.py
-
-echo "🏁 Example script completed!"
+    exit(exit_code) 
