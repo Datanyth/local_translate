@@ -25,6 +25,7 @@
   - [Example](#-example)
 - [Configuration](#-configuration)
 - [Model Zoo](#-model-zoo)
+- [Troubleshooting](#-troubleshooting)
 - [Project Roadmap](#-project-roadmap)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -38,9 +39,11 @@
 
 ### Key Capabilities:
 - **Local LLM Translation**: Uses local LLMs for privacy and offline translation
+- **Dynamic Multi-Model Architecture**: Flexible system supporting multiple model types and datasets
 - **Chunked Processing**: Handles large datasets efficiently through chunked processing
 - **HuggingFace Integration**: Direct integration with HuggingFace datasets and model hub
 - **Resumable Processing**: Can resume translation from any chunk index
+- **GPU-Only Inference**: Optimized for GPU-only execution without CPU offloading
 - **Quantization Support**: Supports 4-bit and 8-bit quantization for memory efficiency
 - **Multi-Column Translation**: Translate multiple columns in a single pass
 - **Automatic Push to Hub**: Automatically push translated datasets to HuggingFace Hub
@@ -50,14 +53,16 @@
 ## ✨ Features
 
 - 🔒 **Privacy-First**: All translation happens locally using your own LLM models
+- 🏗️ **Dynamic Architecture**: Modular system supporting multiple model types (HuggingFace, VLLM, Ollama, OpenRouter)
 - 📊 **Dataset Support**: Works with any HuggingFace dataset format
 - 🚀 **Efficient Processing**: Chunked processing with configurable batch sizes
-- 💾 **Memory Optimization**: Support for 4-bit and 8-bit quantization
+- 💾 **Memory Optimization**: Support for 4-bit and 8-bit quantization with GPU-only inference
 - 🔄 **Resumable**: Continue translation from where you left off
 - 🌐 **Multi-Language**: Support for any language pair your model supports
 - 📈 **Progress Tracking**: Real-time progress monitoring with tqdm
 - 🎯 **Flexible Columns**: Translate specific columns while preserving others
 - 🔧 **Easy Configuration**: Simple command-line interface with comprehensive options
+- ⚡ **GPU-Optimized**: No CPU offloading - everything runs on GPU for maximum performance
 
 ---
 
@@ -71,17 +76,30 @@ local_translate/
 ├── scripts/
 │   └── example_run.sh        # Example usage script
 ├── src/
-│   ├── main.py              # Main translation processor
-│   └── model.py             # LLM model wrapper
-└── utils/
-    └── utils.py             # Utility functions
+│   ├── orchestrator.py       # Main orchestrator for dynamic translation
+│   ├── config.py             # Configuration management
+│   ├── core/
+│   │   ├── base.py           # Base classes for models, datasets, processors
+│   │   └── registry.py       # Registry system for components
+│   ├── models/
+│   │   └── huggingface_model.py  # HuggingFace model implementation
+│   ├── data_loaders/
+│   │   └── huggingface_dataset.py # HuggingFace dataset loader
+│   └── processors/
+│       └── translation_processor.py # Translation processing logic
+├── test/
+│   └── test_hf_models.py     # Test suite for HuggingFace models
+├── utils/
+│   └── utils.py              # Utility functions
+└── output/                   # Output directory for translated datasets
 ```
 
 ### Core Components:
 
-- **`TranslateProcessor`**: Main class handling dataset translation workflow
-- **`TranslateModel`**: Wrapper for LLM models with quantization support
-- **Utility Functions**: Dataset management, chunk loading, and HuggingFace integration
+- **`DynamicTranslator`**: Main orchestrator handling the translation workflow
+- **`HuggingFaceModel`**: Optimized HuggingFace model wrapper with GPU-only inference
+- **`TranslationProcessor`**: Handles dataset translation with chunked processing
+- **Registry System**: Dynamic registration and management of models, datasets, and processors
 
 ---
 
@@ -116,83 +134,111 @@ python -c "import torch; print(f'PyTorch version: {torch.__version__}')"
 
 ### Usage
 
-The main translation script can be run with various command-line arguments:
+#### New Dynamic Translator API (Recommended)
+
+```python
+import asyncio
+from src.orchestrator import DynamicTranslator
+
+async def translate_dataset():
+    translator = DynamicTranslator()
+    
+    await translator.translate(
+        model_type="huggingface",
+        model_id="LLaMAX/LLaMAX3-8B-Alpaca",
+        dataset_type="huggingface",
+        dataset_id="presencesw/open-s1-small",
+        columns_to_process=["problem", "solution"],
+        source_lang="en",
+        target_lang="vi",
+        quantization="4bit",  # GPU-only 4-bit quantization
+        device="cuda",
+        output_dir="output"
+    )
+
+# Run the translation
+asyncio.run(translate_dataset())
+```
+
+#### Test Script
+
+Run the included test script to verify everything works:
 
 ```bash
-python -m src.main \
-  --model_id <MODEL_ID> \
-  --repo_id <REPO_ID> \
-  --src_language <SOURCE_LANGUAGE> \
-  --trg_language <TARGET_LANGUAGE> \
-  --dataset_name <DATASET_NAME> \
-  --column_name <COLUMN1> <COLUMN2> \
-  --translated_dataset_dir <OUTPUT_DIR>
+python test/test_hf_models.py
 ```
 
 ### Example
 
 Here's a complete example translating an English dataset to Vietnamese:
 
-```bash
-export CUDA_VISIBLE_DEVICES=0
-python -m src.main \
-  --model_id LLaMAX/LLaMAX3-8B-Alpaca \
-  --repo_id your-username/translated-dataset \
-  --src_language English \
-  --trg_language Vietnamese \
-  --max_length_token 12800 \
-  --dataset_name knoveleng/open-s1 \
-  --column_name problem solution \
-  --translated_dataset_dir ".cache" \
-  --download_dataset_dir ".cache" \
-  --start_inter 0 \
-  --writer_batch_size 20 \
-  --use_4bit
-```
+```python
+#!/usr/bin/env python3
+import asyncio
+import os
+from src.orchestrator import DynamicTranslator
 
-Or use the provided script:
-```bash
-chmod +x scripts/example_run.sh
-./scripts/example_run.sh
+async def main():
+    translator = DynamicTranslator()
+    
+    await translator.translate(
+        model_type="huggingface",
+        model_id="LLaMAX/LLaMAX3-8B-Alpaca",
+        dataset_type="huggingface",
+        dataset_id="presencesw/open-s1-small",
+        columns_to_process=["problem", "solution"],
+        source_lang="en",
+        target_lang="vi",
+        quantization="4bit",  # GPU-only quantization
+        device="cuda",
+        model_dir=os.getenv("HF_HOME"),
+        data_dir=os.getenv("HF_HOME"),
+        cache_dir=".cache",
+        output_dir="output",
+        push_to_hub=True
+    )
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ---
 
 ## ⚙️ Configuration
 
-### Required Arguments
+### Model Configuration
 
-| Argument | Description | Example |
-|----------|-------------|---------|
-| `--model_id` | HuggingFace model identifier | `LLaMAX/LLaMAX3-8B-Alpaca` |
-| `--repo_id` | Target HuggingFace repo for translated dataset | `username/dataset-name` |
-| `--src_language` | Source language name | `English` |
-| `--trg_language` | Target language name | `Vietnamese` |
-| `--dataset_name` | HuggingFace dataset name | `knoveleng/open-s1` |
-| `--column_name` | Columns to translate (space-separated) | `problem solution` |
-| `--translated_dataset_dir` | Output directory for translated data | `.cache` |
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `model_type` | Type of model to use | `"huggingface"` |
+| `model_id` | HuggingFace model identifier | `"LLaMAX/LLaMAX3-8B-Alpaca"` |
+| `quantization` | Quantization level | `"4bit"` or `"8bit"` |
+| `device` | Device to use | `"cuda"` |
 
-### Optional Arguments
+### Dataset Configuration
 
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `--max_length_token` | Maximum tokens for model input | `8000` |
-| `--subset` | Dataset subset to use | `train` |
-| `--start_inter` | Chunk index to start from | `0` |
-| `--batch_size` | Processing batch size | `1` |
-| `--writer_batch_size` | Records per chunk | `20` |
-| `--download_dataset_dir` | Local dataset cache directory | `None` |
-| `--use_4bit` | Enable 4-bit quantization | `False` |
-| `--use_8bit` | Enable 8-bit quantization | `False` |
-| `--push` | Push to HuggingFace Hub | `True` |
-| `--warning_skip` | Suppress warnings | `True` |
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `dataset_type` | Type of dataset | `"huggingface"` |
+| `dataset_id` | HuggingFace dataset identifier | `"presencesw/open-s1-small"` |
+| `columns_to_process` | Columns to translate | `["problem", "solution"]` |
+
+### Processing Configuration
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `source_lang` | Source language | `"en"` |
+| `target_lang` | Target language | `"vi"` |
+| `output_dir` | Output directory | `"output"` |
+| `chunk_size` | Processing chunk size | `20` |
+| `batch_size` | Processing batch size | `1` |
 
 ### Performance Tips
 
-- **Use quantization** (`--use_4bit` or `--use_8bit`) for memory efficiency
-- **Adjust `writer_batch_size`** based on your available memory
-- **Set `start_inter`** to resume interrupted translations
-- **Use `download_dataset_dir`** to cache datasets locally for faster re-runs
+- **Use 4-bit quantization** for memory efficiency (recommended)
+- **GPU-only inference** - no CPU offloading for maximum performance
+- **Adjust chunk_size** based on your available memory
+- **Use environment variables** for cache directories (`HF_HOME`, etc.)
 
 ---
 
@@ -215,21 +261,25 @@ Local Translate is optimized for the **LLaMAX3-8B-Alpaca** model, which provides
 
 ### 🔧 Model Usage Examples
 
-#### Basic Usage (Recommended with 4-bit quantization):
-```bash
-python -m src.main \
-  --model_id LLaMAX/LLaMAX3-8B-Alpaca \
-  --use_4bit \
-  --max_length_token 12800 \
-  # ... other arguments
+#### GPU-Only 4-bit Quantization (Recommended):
+```python
+await translator.translate(
+    model_type="huggingface",
+    model_id="LLaMAX/LLaMAX3-8B-Alpaca",
+    quantization="4bit",  # GPU-only, no CPU offload
+    device="cuda",
+    # ... other parameters
+)
 ```
 
 #### Full Precision Usage (if you have sufficient VRAM):
-```bash
-python -m src.main \
-  --model_id LLaMAX/LLaMAX3-8B-Alpaca \
-  --max_length_token 12800 \
-  # ... other arguments
+```python
+await translator.translate(
+    model_type="huggingface",
+    model_id="LLaMAX/LLaMAX3-8B-Alpaca",
+    device="cuda",
+    # ... other parameters
+)
 ```
 
 ### 📊 Memory Requirements
@@ -242,26 +292,47 @@ python -m src.main \
 
 ### ⚠️ Important Notes
 
-- **Quantization**: Always use `--use_4bit` for memory efficiency unless you have high-end hardware
+- **GPU-Only Inference**: No CPU offloading - everything runs on GPU for maximum performance
+- **Quantization**: Always use `quantization="4bit"` for memory efficiency unless you have high-end hardware
 - **Model Compatibility**: Uses LLaMA architecture (`LlamaForCausalLM`)
 - **Download Time**: ~15GB download on first use
 - **Performance**: Excellent translation quality with reasonable speed
 - **Memory**: Ensure your GPU has at least 4GB VRAM for 4-bit quantization
 
-### 🔄 Adding Custom Models
+---
 
-To use a custom model, ensure it:
-1. **Is LLaMA-compatible** (uses `LlamaForCausalLM` architecture)
-2. **Has a HuggingFace model ID** or local path
-3. **Supports the required tokenizer**
+## 🔧 Troubleshooting
 
-Example with custom model:
+### Common Issues
+
+#### Model Loading Hangs
+- **Issue**: Model loading gets stuck during initialization
+- **Solution**: Use GPU-only configuration with `quantization="4bit"` and ensure `llm_int8_enable_fp32_cpu_offload=False`
+
+#### Memory Issues
+- **Issue**: CUDA out of memory errors
+- **Solution**: Use 4-bit quantization and reduce chunk_size
+
+#### Slow Performance
+- **Issue**: Translation is too slow
+- **Solution**: Ensure GPU-only inference (no CPU offloading) and use appropriate quantization
+
+### Performance Optimization
+
+1. **Use 4-bit quantization** for best memory efficiency
+2. **Keep everything on GPU** - avoid CPU offloading
+3. **Adjust chunk_size** based on your GPU memory
+4. **Use environment variables** for cache directories
+
+### Debug Mode
+
+Run the test script to verify your setup:
+
 ```bash
-python -m src.main \
-  --model_id your-username/your-custom-llama-model \
-  --use_4bit \
-  # ... other arguments
+python test/test_hf_models.py
 ```
+
+This will test the complete pipeline and identify any issues.
 
 ---
 
@@ -282,8 +353,11 @@ python -m src.main \
 
 ### Recent Updates
 
+- ✅ **Dynamic Architecture**: Modular system supporting multiple model types
+- ✅ **GPU-Only Inference**: Optimized for GPU-only execution without CPU offloading
+- ✅ **Fixed Hanging Issues**: Resolved model loading and inference hanging problems
+- ✅ **4-bit Quantization**: Memory-efficient quantization with proper configuration
 - ✅ **Chunked Processing**: Efficient handling of large datasets
-- ✅ **Quantization Support**: 4-bit and 8-bit model quantization
 - ✅ **Resumable Processing**: Continue from any chunk index
 - ✅ **HuggingFace Integration**: Seamless dataset and model management
 

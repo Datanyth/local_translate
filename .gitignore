@@ -175,3 +175,8 @@ cython_debug/
 
 # vscode
 .vscode/
+
+.cursor/
+
+output/
+

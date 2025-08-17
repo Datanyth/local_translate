@@ -1,11 +1,15 @@
 import argparse
 import logging
 import os
+import sys
 from pathlib import Path
-from typing import List
+from typing import List, Optional, cast
+
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import transformers
-from datasets import load_dataset, load_from_disk
+from datasets import load_dataset, load_from_disk, Dataset, DatasetDict
 from tqdm.auto import tqdm
 from transformers.utils.logging import set_verbosity
 
@@ -79,7 +83,7 @@ class TranslateProcessor:
         subset: str = "default",
         start_inter: int = 0,
         batch_size: int = 1,
-        download_dataset_dir: str = None,
+        download_dataset_dir: Optional[str] = None,
         writer_batch_size: int = 20,
         use_4bit: bool = False,
         use_8bit: bool = False,
@@ -157,7 +161,7 @@ class TranslateProcessor:
 
     def __call__(self, push=False, warning_skip=True):
         if warning_skip:
-            set_verbosity(transformers.logging.CRITICAL)
+            set_verbosity(logging.CRITICAL)
         # Create folder to save translated data
         if self.download_dataset_dir is not None:
             dataset_path = Path(
@@ -174,8 +178,11 @@ class TranslateProcessor:
             dataset = dataset[f"{self.subset}"]
         else:
             # Load from HuggingFace cache
-            dataset = load_dataset(self.dataset_name)
-            dataset = dataset[f"{self.subset}"]
+            dataset_dict = load_dataset(self.dataset_name, streaming=False)
+            if isinstance(dataset_dict, DatasetDict):
+                dataset = cast(Dataset, dataset_dict[f"{self.subset}"])
+            else:
+                dataset = cast(Dataset, dataset_dict)
 
         save_translated_path = Path(
             os.path.join(self.translated_dataset_dir, self.dataset_name)
@@ -205,7 +212,7 @@ class TranslateProcessor:
 
             # Select the current chunk safely
             try:
-                split_dataset = dataset.select(
+                split_dataset = dataset.select(  # type: ignore
                     range(start, end)
                 )  # Safe even for last incomplete chunk
             except Exception as e:
@@ -233,7 +240,7 @@ class TranslateProcessor:
         )
 
         # Merge dataset and push to hub
-        merged_dataset = load_all_chunk(src_dir=save_translated_path)
+        merged_dataset = load_all_chunk(src_dir=str(save_translated_path))
         if push:
             push_to_hub(dataset=merged_dataset, repo_id=self.repo_id)
 
