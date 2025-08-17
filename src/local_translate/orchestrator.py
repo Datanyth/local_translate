@@ -9,12 +9,12 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import json
 
-from .core.base import ModelConfig, DatasetConfig, ProcessingConfig
-from .core.registry import ModelRegistry, DatasetRegistry, ProcessorRegistry
+from .core_dataclass.base import ModelConfig, DatasetConfig, ProcessingConfig
+from .core_dataclass.registry import ModelRegistry, DatasetRegistry, ProcessorRegistry
 from .config import config, Config
 
 # Import all models to register them
-from .models.huggingface_model import HuggingFaceModel
+from ..huggingface_model_temp import HuggingFaceModel
 # from .models.vllm_model import VLLMModel
 # from .models.ollama_model import OllamaModel
 # from .models.openrouter_model import OpenRouterModel
@@ -26,6 +26,7 @@ from .data_loaders.huggingface_dataset import HuggingFaceDataset
 
 # Import all processors to register them
 from .processors.translation_processor import TranslationProcessor
+from loguru import logger
 
 
 class DynamicTranslator:

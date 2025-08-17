@@ -7,8 +7,8 @@ import random
 from typing import List, Dict, Any, Union, Optional, cast
 from datasets import load_dataset, Dataset, DatasetDict, concatenate_datasets
 from pathlib import Path
-from ..core.base import BaseDataset, DatasetConfig
-from ..core.registry import register_dataset
+from ..core_dataclass.base import BaseDataset, DatasetConfig
+from ..core_dataclass.registry import register_dataset
 
 
 @register_dataset("huggingface")

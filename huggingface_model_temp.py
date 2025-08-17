@@ -7,8 +7,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers.utils.quantization_config import BitsAndBytesConfig
 from typing import List, Dict, Any
 import asyncio
-from ..core.base import BaseModel, ModelConfig
-from ..core.registry import register_model
+from .src.core.base import BaseModel, ModelConfig
+from .src.core.registry import register_model
 
 
 @register_model("huggingface")

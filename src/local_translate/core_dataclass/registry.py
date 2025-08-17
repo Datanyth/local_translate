@@ -3,8 +3,8 @@ Registry system for dynamic model and dataset registration.
 """
 
 from typing import Dict, Type, Any, Optional, Callable, List
-from .base import BaseModel, BaseDataset, BaseProcessor
-
+from .base import BaseModel, BaseProcessor
+from datasets import Dataset
 
 class ModelRegistry:
     """Registry for model implementations."""
@@ -37,35 +37,35 @@ class ModelRegistry:
         return model_class(config)
 
 
-class DatasetRegistry:
-    """Registry for dataset implementations."""
+# class DatasetRegistry:
+#     """Registry for dataset implementations."""
     
-    _instance = None
-    _datasets: Dict[str, Type[BaseDataset]] = {}
+#     _instance = None
+#     _datasets: Dict[str, Type[BaseDataset]] = {}
     
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+#     def __new__(cls):
+#         if cls._instance is None:
+#             cls._instance = super().__new__(cls)
+#         return cls._instance
     
-    def register(self, dataset_type: str, dataset_class: Type[BaseDataset]) -> None:
-        """Register a dataset implementation."""
-        self._datasets[dataset_type] = dataset_class
+#     def register(self, dataset_type: str, dataset_class: Type[BaseDataset]) -> None:
+#         """Register a dataset implementation."""
+#         self._datasets[dataset_type] = dataset_class
     
-    def get(self, dataset_type: str) -> Optional[Type[BaseDataset]]:
-        """Get a dataset implementation by type."""
-        return self._datasets.get(dataset_type)
+#     def get(self, dataset_type: str) -> Optional[Type[BaseDataset]]:
+#         """Get a dataset implementation by type."""
+#         return self._datasets.get(dataset_type)
     
-    def list_datasets(self) -> List[str]:
-        """List all registered dataset types."""
-        return list(self._datasets.keys())
+#     def list_datasets(self) -> List[str]:
+#         """List all registered dataset types."""
+#         return list(self._datasets.keys())
     
-    def create(self, dataset_type: str, config: Any) -> BaseDataset:
-        """Create a dataset instance."""
-        dataset_class = self.get(dataset_type)
-        if dataset_class is None:
-            raise ValueError(f"Unknown dataset type: {dataset_type}")
-        return dataset_class(config)
+#     def create(self, dataset_type: str, config: Any) -> BaseDataset:
+#         """Create a dataset instance."""
+#         dataset_class = self.get(dataset_type)
+#         if dataset_class is None:
+#             raise ValueError(f"Unknown dataset type: {dataset_type}")
+#         return dataset_class(config)
 
 
 class ProcessorRegistry:
@@ -91,7 +91,7 @@ class ProcessorRegistry:
         """List all registered processor types."""
         return list(self._processors.keys())
     
-    def create(self, processor_type: str, model: BaseModel, dataset: BaseDataset, config: Any) -> BaseProcessor:
+    def create(self, processor_type: str, model: BaseModel, dataset: Dataset, config: Any) -> BaseProcessor:
         """Create a processor instance."""
         processor_class = self.get(processor_type)
         if processor_class is None:
@@ -108,12 +108,12 @@ def register_model(model_type: str):
     return decorator
 
 
-def register_dataset(dataset_type: str):
-    """Decorator to register a dataset implementation."""
-    def decorator(dataset_class: Type[BaseDataset]) -> Type[BaseDataset]:
-        DatasetRegistry().register(dataset_type, dataset_class)
-        return dataset_class
-    return decorator
+# def register_dataset(dataset_type: str):
+#     """Decorator to register a dataset implementation."""
+#     def decorator(dataset_class: Type[Dataset]) -> Type[Dataset]:
+#         DatasetRegistry().register(dataset_type, dataset_class)
+#         return dataset_class
+#     return decorator
 
 
 def register_processor(processor_type: str):

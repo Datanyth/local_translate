@@ -7,8 +7,8 @@ from typing import List, Dict, Any, Optional, Callable
 from pathlib import Path
 import json
 from tqdm import tqdm
-from ..core.base import BaseProcessor, ProcessingConfig
-from ..core.registry import register_processor
+from local_translate.core_dataclass.base import BaseProcessor, ProcessingConfig
+from local_translate.core_dataclass.registry import register_processor
 
 
 @register_processor("translation")
@@ -124,22 +124,22 @@ class TranslationProcessor(BaseProcessor):
         
         return processed_chunk
     
-    def create_prompt(self, text: str, source_lang: str, target_lang: str) -> str:
-        """Create a translation prompt."""
-        prompt = f"""Please translate the following text from {source_lang} to {target_lang}. 
-Only provide the translated text without any additional explanations or formatting.
+#     def create_prompt(self, text: str, source_lang: str, target_lang: str) -> str:
+#         """Create a translation prompt."""
+#         prompt = f"""Please translate the following text from {source_lang} to {target_lang}. 
+# Only provide the translated text without any additional explanations or formatting.
 
-Text to translate:
-{text}
+# Text to translate:
+# {text}
 
-Translation:"""
-        return prompt
+# Translation:"""
+#         return prompt
     
-    def get_processing_info(self) -> Dict[str, Any]:
-        """Get processing information."""
-        info = super().get_processing_info()
-        info.update({
-            "processed_samples": len(self.processed_data),
-            "current_chunk": self.current_chunk
-        })
-        return info 
+#     def get_processing_info(self) -> Dict[str, Any]:
+#         """Get processing information."""
+#         info = super().get_processing_info()
+#         info.update({
+#             "processed_samples": len(self.processed_data),
+#             "current_chunk": self.current_chunk
+#         })
+#         return info 
